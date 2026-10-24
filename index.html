@@ -66,6 +66,8 @@
     }
     .hud-header {
       display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 9px;
@@ -84,7 +86,7 @@
       box-shadow: 0 0 0 3px var(--green-bg);
       animation: pulse 2.2s ease-in-out infinite;
     }
-    .stats { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; gap: 10px; }
+    .stats { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; gap: 10px; }
     .progress-label { font-weight: 700; display: flex; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums; }
     .progress-label .hud-tag {
       font: 700 10px/1 ui-monospace, "SFMono-Regular", Consolas, monospace;
@@ -117,6 +119,26 @@
       font: 800 15px/1 ui-monospace, "SFMono-Regular", Consolas, monospace;
       margin: 0 1px 0 4px;
     }
+    .records { display: flex; flex-wrap: wrap; gap: 6px 15px; margin: 12px 0 0; font-size: 12px; }
+    .records div { display: flex; gap: 6px; }
+    .records dt { color: var(--text); }
+    .records dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .storage-note { margin: 10px 0 0; font-size: 12px; color: var(--text); }
+    .check-label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; font-size: 13px; }
+    .check-label input { width: 18px; height: 18px; margin: 0; accent-color: var(--green); flex-shrink: 0; }
+    .check-label input:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    .keyboard-help { margin: 0 0 16px; font-size: 12px; color: var(--text); }
+    .record-badge { display: inline-block; padding: 5px 12px; border: 1px solid var(--green); background: var(--green-bg); color: var(--green); border-radius: 8px; font-size: 13px; }
+    .review { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border); text-align: left; }
+    .review h3 { margin: 0 0 8px; font-size: 18px; }
+    .review-count { margin: 6px 0 14px; font-size: 13px; }
+    .review-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+    .review-item { border: 1px solid var(--border); border-radius: 12px; padding: 16px; overflow-wrap: anywhere; }
+    .review-item h4 { font-size: 15px; line-height: 1.6; margin: 10px 0; }
+    .review-item p { font-size: 14px; margin: 5px 0; }
+    .review-status { display: inline-block; border-radius: 5px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+    .review-status.correct { color: var(--green); background: var(--green-bg); }
+    .review-status.wrong { color: var(--red); background: var(--red-bg); }
     .track {
       height: 10px;
       border-radius: 6px;
@@ -322,6 +344,12 @@
           <div class="score" aria-live="polite" aria-atomic="true">✧ 획득 점수<strong id="score">0</strong>점</div>
         </div>
         <div class="track" id="progress" role="progressbar" aria-label="답변한 문항" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0" aria-valuetext="10문항 중 0문항 완료"><div class="fill" id="fill"></div></div>
+        <dl class="records">
+          <div><dt>현재 연속 정답</dt><dd id="streak">0회</dd></div>
+          <div><dt>최고 점수</dt><dd id="best-score">0점</dd></div>
+          <div><dt>최장 연속 정답</dt><dd id="best-streak">0회</dd></div>
+        </dl>
+        <p id="storage-note" class="storage-note" role="status" hidden></p>
       </section>
       <article class="card">
         <div id="quiz">
@@ -362,6 +390,8 @@
             <div class="question-meta"><span class="number" id="question-number">질문 01</span><span class="category" id="category"></span></div>
             <h2 id="question" tabindex="-1"></h2>
             <p class="hint">정답이라고 생각하는 답을 하나 골라주세요.</p>
+            <label class="check-label"><input type="checkbox" id="shortcuts" aria-describedby="keyboard-help">빠른 답 선택 켜기</label>
+            <p class="keyboard-help" id="keyboard-help">켜면 퀴즈 안에서 1~4 또는 A~D로 답을 선택할 수 있어요. Tab으로 이동하고 Enter·Space로 버튼을 누를 수도 있어요.</p>
             <div class="answers" id="answers" role="group" aria-labelledby="question"></div>
             <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div>
             <div class="actions">
@@ -377,8 +407,16 @@
           <p class="result-copy" id="result-copy"></p>
           <div class="result-score" id="result-score"></div>
           <p class="result-detail" id="result-detail"></p>
+          <p id="result-records"></p>
+          <p class="record-badge" id="record-badge" hidden></p>
           <button type="button" class="primary" id="restart"><span>다시 탐험하기</span><span aria-hidden="true">↻</span></button>
           <p class="result-note">새로운 발견은 언제나 한 번의 도전에서 시작돼요.</p>
+          <section class="review" aria-labelledby="review-title">
+            <h3 id="review-title">탐사 기록 다시보기</h3>
+            <label class="check-label"><input type="checkbox" id="wrong-only">오답만 보기</label>
+            <p class="review-count" id="review-count" role="status" aria-atomic="true"></p>
+            <ol class="review-list" id="review-list" role="list"></ol>
+          </section>
         </section>
       </article>
       <noscript><p>퀴즈를 풀려면 브라우저의 JavaScript를 켜주세요.</p></noscript>
@@ -406,6 +444,68 @@
     let current = 0;
     let score = 0;
     let answered = false;
+    let responses = [];
+    let streak = 0;
+    let runBestStreak = 0;
+    let finished = false;
+    const recordKey = "space-quiz.records.v1";
+    let records = { bestScore: 0, bestStreak: 0 };
+    let storageAvailable = true;
+    let consumedSpace = false;
+
+    function storageFailure(error) {
+      storageAvailable = false;
+      console.warn("우주 퀴즈 기록을 저장하거나 불러올 수 없습니다.", error);
+      byId("storage-note").textContent = "기록을 저장하거나 불러올 수 없어요. 표시된 기록은 이번 방문에서만 유지됩니다.";
+      byId("storage-note").hidden = false;
+    }
+
+    function isStorageError(error) {
+      return error instanceof DOMException && ["SecurityError", "QuotaExceededError", "InvalidStateError", "UnknownError"].includes(error.name);
+    }
+
+    function loadRecords() {
+      try {
+        const raw = localStorage.getItem(recordKey);
+        if (raw === null) return;
+        const saved = JSON.parse(raw);
+        if (!saved || ![saved.bestScore, saved.bestStreak].every(value =>
+          Number.isInteger(value) && value >= 0 && value <= questions.length)) {
+          storageFailure(new Error("저장된 기록 형식이 올바르지 않습니다."));
+          return;
+        }
+        records = { bestScore: saved.bestScore, bestStreak: saved.bestStreak };
+      } catch (error) {
+        if (!(error instanceof SyntaxError) && !isStorageError(error)) throw error;
+        storageFailure(error);
+      }
+    }
+
+    function saveRecords() {
+      if (!storageAvailable) return;
+      try {
+        localStorage.setItem(recordKey, JSON.stringify(records));
+      } catch (error) {
+        if (!isStorageError(error)) throw error;
+        storageFailure(error);
+      }
+    }
+
+    function renderRecords() {
+      byId("streak").textContent = `${streak}회`;
+      byId("best-score").textContent = `${records.bestScore}점`;
+      byId("best-streak").textContent = `${records.bestStreak}회`;
+    }
+
+    function updateShortcuts() {
+      byId("answers").querySelectorAll("button").forEach((button, index) => {
+        if (byId("shortcuts").checked && !answered) {
+          button.setAttribute("aria-keyshortcuts", `${index + 1} ${String.fromCharCode(65 + index)}`);
+        } else {
+          button.removeAttribute("aria-keyshortcuts");
+        }
+      });
+    }
 
     function updateProgress(completed) {
       const pct = Math.round(completed / questions.length * 100);
@@ -448,15 +548,25 @@
         button.addEventListener("click", () => selectAnswer(index));
         byId("answers").append(button);
       });
+      updateShortcuts();
       if (moveFocus) byId("question").focus();
     }
 
     function selectAnswer(selected) {
-      if (answered) return;
+      if (answered || finished) return;
       answered = true;
       const item = questions[current];
       const correct = selected === item.correct;
+      responses[current] = selected;
       if (correct) score += 1;
+      streak = correct ? streak + 1 : 0;
+      runBestStreak = Math.max(runBestStreak, streak);
+      if (streak > records.bestStreak) {
+        records.bestStreak = streak;
+        saveRecords();
+      }
+      renderRecords();
+      updateShortcuts();
       const buttons = byId("answers").querySelectorAll("button");
       buttons.forEach((button, index) => {
         button.disabled = true;
@@ -485,6 +595,14 @@
     }
 
     function showResults() {
+      if (finished) return;
+      finished = true;
+      const newRecord = score > records.bestScore;
+      if (newRecord) {
+        records.bestScore = score;
+        saveRecords();
+      }
+      renderRecords();
       const reaction = score >= 8
         ? { emoji: "🧑‍🚀", title: "당신은 우주 탐사 대장!", copy: "놀라운 우주력이에요. 달을 넘어 더 먼 우주로 떠날 준비가 됐어요." }
         : score >= 5
@@ -499,26 +617,102 @@
       denominator.textContent = " / 10점";
       byId("result-score").replaceChildren(document.createTextNode(String(score)), denominator);
       byId("result-detail").textContent = `10문항 중 ${score}문항 정답 · 정답률 ${score * 10}%`;
+      byId("result-records").textContent = `이번 도전 최장 연속 정답 ${runBestStreak}회 · 최고 점수 ${records.bestScore}점`;
+      byId("record-badge").hidden = !newRecord;
+      byId("record-badge").textContent = storageAvailable ? "✦ 최고 점수 신기록 달성!" : "✦ 이번 방문 신기록! (저장되지 않음)";
+      renderReview();
       byId("result-title").focus();
     }
 
-    byId("next").addEventListener("click", () => {
-      if (!answered) return;
+    function renderReview() {
+      const list = byId("review-list");
+      list.replaceChildren();
+      questions.forEach((item, index) => {
+        const correct = responses[index] === item.correct;
+        if (byId("wrong-only").checked && correct) return;
+        const entry = document.createElement("li");
+        entry.className = "review-item";
+        entry.value = index + 1;
+        const badge = document.createElement("span");
+        badge.className = `review-status ${correct ? "correct" : "wrong"}`;
+        badge.textContent = correct ? "✓ 정답" : "✕ 오답";
+        const heading = document.createElement("h4");
+        heading.textContent = `${index + 1}. ${item.question}`;
+        entry.append(badge, heading);
+        [
+          `내 선택: ${item.answers[responses[index]]}`,
+          `정답: ${item.answers[item.correct]}`,
+          item.explanation
+        ].forEach(text => {
+          const paragraph = document.createElement("p");
+          paragraph.textContent = text;
+          entry.append(paragraph);
+        });
+        list.append(entry);
+      });
+      byId("review-count").textContent = list.children.length === 0
+        ? "오답이 없어요. 모든 문항을 맞혔어요!"
+        : `${byId("wrong-only").checked ? "오답" : "전체"} ${list.children.length}문항을 표시합니다.`;
+    }
+
+    function nextQuestion() {
+      if (!answered || finished) return;
       if (current === questions.length - 1) {
         showResults();
       } else {
         current += 1;
         renderQuestion(true);
       }
+    }
+
+    byId("next").addEventListener("click", nextQuestion);
+    byId("shortcuts").addEventListener("change", updateShortcuts);
+    byId("wrong-only").addEventListener("change", renderReview);
+    byId("quiz").addEventListener("keydown", event => {
+      if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.altKey || event.metaKey || finished) return;
+      if (event.target.isContentEditable || event.target.closest("input, textarea, select, a, [role='textbox']")) return;
+      const key = event.key.toLowerCase();
+      const choice = "1234".includes(key) && key.length === 1 ? Number(key) - 1 : ["a", "b", "c", "d"].indexOf(key);
+      const activation = key === "enter" || key === " ";
+      if (event.repeat) {
+        if (activation || (byId("shortcuts").checked && choice >= 0)) event.preventDefault();
+        return;
+      }
+      if (byId("shortcuts").checked && choice >= 0 && !answered) {
+        event.preventDefault();
+        selectAnswer(choice);
+      } else if (activation && answered && !event.target.closest("button")) {
+        event.preventDefault();
+        consumedSpace = key === " ";
+        nextQuestion();
+      }
     });
+    document.addEventListener("keyup", event => {
+      if (event.key === " " && consumedSpace) {
+        event.preventDefault();
+        consumedSpace = false;
+      }
+    });
+    window.addEventListener("blur", () => { consumedSpace = false; });
     byId("restart").addEventListener("click", () => {
       current = 0;
       score = 0;
+      responses = [];
+      streak = 0;
+      runBestStreak = 0;
+      finished = false;
+      byId("wrong-only").checked = false;
+      byId("review-list").replaceChildren();
+      byId("review-count").textContent = "";
+      byId("record-badge").hidden = true;
       byId("result").hidden = true;
       byId("quiz").hidden = false;
       updateProgress(0);
+      renderRecords();
       renderQuestion(true);
     });
+    loadRecords();
+    renderRecords();
     renderQuestion();
   </script>
 </body>
