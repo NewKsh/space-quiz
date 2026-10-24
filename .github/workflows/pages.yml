@@ -1,0 +1,80 @@
+name: Publish quiz to GitHub Pages
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate standalone quiz
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check HTML entry point and JavaScript syntax
+        run: |
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          assert.match(html, /<!doctype html>/i);
+          assert.match(html, /<html lang="ko">/);
+          assert.match(html, /name="viewport"/);
+          for (const id of ['question', 'answers', 'score', 'progress', 'result', 'restart']) {
+            assert.ok(html.includes(`id="${id}"`), `Missing quiz element: ${id}`);
+          }
+          const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+          assert.equal(scripts.length, 1, 'Keep the quiz script inline in index.html');
+          assert.doesNotMatch(scripts[0][1], /\bsrc\s*=/i);
+          new vm.Script(scripts[0][2], { filename: 'index.html' });
+          assert.doesNotMatch(html, /<(?:script|link|img|iframe)\b[^>]*\b(?:src|href)=["'](?:https?:)?\/\//i);
+          console.log('Standalone quiz structure and JavaScript syntax are valid.');
+          NODE
+
+  build:
+    name: Package static site
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Stage the standalone website
+        run: |
+          mkdir --parents _site
+          cp index.html _site/index.html
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
